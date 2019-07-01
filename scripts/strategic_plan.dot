@@ -1,0 +1,75 @@
+digraph plan {
+0[ label="plan_start",style=filled,fillcolor=black,fontcolor=white];
+1[ label="undock_start
+(kenny,wp0)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+2[ label="undock_end
+(kenny,wp0)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+3[ label="localise_start
+(kenny)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+4[ label="localise_end
+(kenny)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+5[ label="complete_mission_start
+(kenny,mission_0,wp0,wp1)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+6[ label="complete_mission_end
+(kenny,mission_0,wp0,wp1)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+7[ label="goto_waypoint_start
+(kenny,wp1,wp0)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+8[ label="goto_waypoint_end
+(kenny,wp1,wp0)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+9[ label="complete_mission_start
+(kenny,mission_1,wp0,wp1)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+10[ label="complete_mission_end
+(kenny,mission_1,wp0,wp1)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+11[ label="goto_waypoint_start
+(kenny,wp1,wp0)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+12[ label="goto_waypoint_end
+(kenny,wp1,wp0)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+13[ label="complete_mission_start
+(kenny,mission_2,wp0,wp1)",style=filled,fillcolor=darkolivegreen,fontcolor=white];
+14[ label="complete_mission_end
+(kenny,mission_2,wp0,wp1)",style=filled,fillcolor=darkgoldenrod2];
+"0" -> "1" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"1" -> "2" [ label="[5, 5]" , penwidth=2, color="black"]
+"0" -> "2" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"2" -> "3" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"3" -> "4" [ label="[60, 60]" , penwidth=2, color="black"]
+"2" -> "5" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"4" -> "5" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"5" -> "6" [ label="[670.651, 670.651]" , penwidth=2, color="black"]
+"6" -> "7" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"4" -> "7" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"2" -> "7" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"7" -> "8" [ label="[60, 60]" , penwidth=2, color="black"]
+"6" -> "8" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"2" -> "9" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"4" -> "9" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"6" -> "9" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"8" -> "9" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"5" -> "9" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"9" -> "10" [ label="[248.004, 248.004]" , penwidth=2, color="black"]
+"8" -> "10" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"7" -> "10" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"5" -> "10" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"10" -> "11" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"4" -> "11" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"2" -> "11" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"7" -> "11" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"6" -> "11" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"11" -> "12" [ label="[60, 60]" , penwidth=2, color="black"]
+"10" -> "12" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"6" -> "12" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"2" -> "13" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"4" -> "13" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"10" -> "13" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"12" -> "13" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"9" -> "13" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"6" -> "13" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"5" -> "13" [ label="[0.001, inf]" , penwidth=2, color="black"]
+"13" -> "14" [ label="[664.501, 664.501]" , penwidth=2, color="red"]
+"12" -> "14" [ label="[0.001, inf]" , penwidth=2, color="red"]
+"11" -> "14" [ label="[0.001, inf]" , penwidth=2, color="red"]
+"9" -> "14" [ label="[0.001, inf]" , penwidth=2, color="red"]
+"8" -> "14" [ label="[0.001, inf]" , penwidth=2, color="red"]
+"7" -> "14" [ label="[0.001, inf]" , penwidth=2, color="red"]
+"5" -> "14" [ label="[0.001, inf]" , penwidth=2, color="red"]
+}
