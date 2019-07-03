@@ -9,15 +9,22 @@ namespace KCL_rosplan {
 
 		node_handle = &nh;
 
-		// knowledge interface
-		update_knowledge_client = nh.serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateService>("/rosplan_knowledge_base/update");
-		current_goals_client = nh.serviceClient<rosplan_knowledge_msgs::GetAttributeService>("/rosplan_knowledge_base/state/goals");
-
 		// planning interface
 		std::string probTopic = "/rosplan_problem_interface/problem_generation_server";
 		std::string planTopic = "/rosplan_planner_interface/planning_server";
 		std::string parsTopic = "/rosplan_parsing_interface/parse_plan";
+		std::string knowTopic = "/rosplan_knowledge_base";
 
+		// knowledge interface
+		node_handle->getParam("knowledge_base", knowTopic);
+        std::stringstream ss;
+        ss << knowTopic << "/update";
+		update_knowledge_client = nh.serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateService>(ss.str());
+        ss.str("");
+        ss << knowTopic << "/state/goals";
+		current_goals_client = nh.serviceClient<rosplan_knowledge_msgs::GetAttributeService>(ss.str());
+
+        // services
 		node_handle->getParam("problem_service_topic", probTopic);
 		node_handle->getParam("planning_service_topic", planTopic);
 		node_handle->getParam("parsing_service_topic", parsTopic);
@@ -60,7 +67,7 @@ namespace KCL_rosplan {
 		// retrieve old goals and save
 		rosplan_knowledge_msgs::GetAttributeService currentGoalSrv;
 		if (!current_goals_client.call(currentGoalSrv)) {
-			ROS_ERROR("KCL: (%s) Failed to call goal service.", ros::this_node::getName().c_str());
+			ROS_ERROR("KCL: (%s) Failed to call goal service: %s.", ros::this_node::getName().c_str(), current_goals_client.getService().c_str());
 		} else {
 			goals = currentGoalSrv.response.attributes;
 		}
@@ -76,66 +83,80 @@ namespace KCL_rosplan {
 		// compute mission durations
 		std::stringstream ss;
 		std::vector<double> mission_durations;
-		//the locations the mission starts at, and so where the robot has to be to start the mission - for mission_at
-		std::vector<diagnostic_msgs::KeyValue> start_locations;
-		//the location the robot will be after the mission has been
-		std::vector<diagnostic_msgs::KeyValue> end_points;
+
+        // clustering (TODO real clustering)
+        std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> clusters;
+        std::vector<rosplan_knowledge_msgs::KnowledgeItem> c1;
+        std::vector<rosplan_knowledge_msgs::KnowledgeItem> c2;
+
 		std::vector<rosplan_knowledge_msgs::KnowledgeItem>::iterator git = goals.begin();
 		for(; git!=goals.end(); git++) {
+            if(git->values.size()>0 && git->values[0].value == "ugv01") {
+                // UGV 01 placed in cluster 01
+                c1.push_back(*git);
+            } else if(git->values.size()>0 && git->values[0].value == "ugv02" || git->values[0].value == "ugv03") {
+                // UGV 02 and UGV 03 placed in cluster 02
+                c2.push_back(*git);
+            } else {
+                // "docked" placed in both clusters
+                std::cout << git->values[0].value << std::endl;
+                c1.push_back(*git);
+                c2.push_back(*git);
+            }
+        }
+        clusters.push_back(c1);
+        clusters.push_back(c2);
+
+		std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>>::iterator cit = clusters.begin();
+		for(; cit!=clusters.end(); cit++) {
+
 			ss.str("");
 			ss << "mission_" << mission_durations.size();
 
-			// insert new goal
-			updateSrv.request.update_type = rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_GOAL;
-			updateSrv.request.knowledge = *git;
-			update_knowledge_client.call(updateSrv);
+	        // insert goals for tactical mission
+    		std::vector<rosplan_knowledge_msgs::KnowledgeItem>::iterator git = (*cit).begin();
+    		for(; git!=(*cit).end(); git++) {
+		        updateSrv.request.update_type = rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_GOAL;
+		        updateSrv.request.knowledge = *git;
+		        update_knowledge_client.call(updateSrv);
+            }
 
-			// generate problem and plan
-			ROS_INFO("KCL: (%s) Generating plan for %s.", ros::this_node::getName().c_str(), ss.str().c_str());
-			new_plan_recieved = false;
+		    // generate tactical problem and plan
+		    ROS_INFO("KCL: (%s) Generating plan for %s.", ros::this_node::getName().c_str(), ss.str().c_str());
+		    new_plan_recieved = false;
 
-			std_srvs::Empty empty;
-			problem_client.call(empty);
-			ros::Duration(1).sleep(); // sleep for a second
-			planning_client.call(empty);
-			ros::Duration(1).sleep(); // sleep for a second
-			parsing_client.call(empty);
-			ros::Duration(1).sleep(); // sleep for a second
+		    std_srvs::Empty empty;
 
-			while(!new_plan_recieved && ros::ok()) ros::spinOnce();
+		    problem_client.call(empty);
+		    ros::Duration(0.5).sleep(); // sleep for a second
+		    planning_client.call(empty);
+		    ros::Duration(0.5).sleep(); // sleep for a second
+		    parsing_client.call(empty);
+		    ros::Duration(0.5).sleep(); // sleep for a second
 
-			// compute plan duration
-			double max_time = 0;
-			std::vector<rosplan_dispatch_msgs::EsterelPlanNode>::iterator nit = last_plan.nodes.begin();
-			for(; nit != last_plan.nodes.end(); nit++) {
-				//problem that this will overshoot time of plan now - however, could be fine as we should do upper estimate
-				double time = nit->action.dispatch_time + nit->action.duration;
-				if(time > max_time) max_time = time;
-				//get the only first non move or undock action
-				if(start_locations.size() <= mission_durations.size() && !(nit->action.name == "goto_waypoint" || nit->action.name == "undock" || nit->action.name == "localise")){
-					//loop through parameters of that action
-					for(std::vector<diagnostic_msgs::KeyValue>::iterator i = nit->action.parameters.begin(); i != nit->action.parameters.end(); ++i){
-						if(i->key == "wp"){
-							//first one that is a waypoint parameter is where the mission has to start (at_mission)
-							start_locations.push_back(*i);
-						}
-					}
-				}
-			}
+		    while(!new_plan_recieved && ros::ok()) ros::spinOnce();
 
-			//get the end points
-			end_points.push_back(getEndPoint(last_plan.nodes));
+		    ROS_INFO("KCL: (%s) Recieved plan for %s.", ros::this_node::getName().c_str(), ss.str().c_str());
 
-			mission_durations.push_back(max_time);
-			missions[ss.str()];
-			missions[ss.str()].push_back(*git);
+		    // compute plan duration
+		    double max_time = 0;
+		    std::vector<rosplan_dispatch_msgs::EsterelPlanNode>::iterator nit = last_plan.nodes.begin();
+		    for(; nit != last_plan.nodes.end(); nit++) {
+			    //problem that this will overshoot time of plan now - however, could be fine as we should do upper estimate
+			    double time = nit->action.dispatch_time + nit->action.duration;
+			    if(time > max_time) max_time = time;
+		    }
 
-			// clear goals again
-			updateSrv.request.update_type = rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_GOAL;
-			updateSrv.request.knowledge.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
-			updateSrv.request.knowledge.attribute_name = "";
-			updateSrv.request.knowledge.values.clear();
-			update_knowledge_client.call(updateSrv);
+		    mission_durations.push_back(max_time);
+		    missions[ss.str()];
+		    missions[ss.str()] = (*cit);
+
+		    // clear goals again
+		    updateSrv.request.update_type = rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_GOAL;
+		    updateSrv.request.knowledge.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
+		    updateSrv.request.knowledge.attribute_name = "";
+		    updateSrv.request.knowledge.values.clear();
+		    update_knowledge_client.call(updateSrv);
 		}
 
 		// add new mission goals
@@ -169,90 +190,6 @@ namespace KCL_rosplan {
 			updateSrv.request.knowledge.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
 			updateSrv.request.knowledge.attribute_name = "mission_complete";
 			update_knowledge_client.call(updateSrv);
-
-			// mission start
-			updateSrv.request.update_type = rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE;
-			updateSrv.request.knowledge.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
-			updateSrv.request.knowledge.instance_type = "";
-			updateSrv.request.knowledge.instance_name = "";
-			updateSrv.request.knowledge.function_value = 0;
-			updateSrv.request.knowledge.attribute_name = "mission_at";
-			updateSrv.request.knowledge.values.clear();
-			diagnostic_msgs::KeyValue pair_at_mission;
-			pair_at_mission.key = "m";
-			pair_at_mission.value = ss.str();
-			updateSrv.request.knowledge.values.push_back(pair_at_mission);
-			//am changing it now that the start of a mission is at the end of the last one - to change back can delete the if else
-			//decided to keep it the normal way as explained in notes
-			//if(i == 0){
-				updateSrv.request.knowledge.values.push_back(start_locations[i]);
-			/*}
-			else{
-				updateSrv.request.knowledge.values.push_back(end_points[i - 1]);
-			}*/
-			update_knowledge_client.call(updateSrv);
-
-			//end_point
-			updateSrv.request.update_type = rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE;
-			updateSrv.request.knowledge.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
-			updateSrv.request.knowledge.instance_type = "";
-			updateSrv.request.knowledge.instance_name = "";
-			updateSrv.request.knowledge.function_value = 0;
-			updateSrv.request.knowledge.attribute_name = "end_point";
-			updateSrv.request.knowledge.values.clear();
-			diagnostic_msgs::KeyValue pair_end_point;
-			pair_end_point.key = "m";
-			pair_end_point.value = ss.str();
-			updateSrv.request.knowledge.values.push_back(pair_end_point);
-			updateSrv.request.knowledge.values.push_back(end_points[i]);
-			update_knowledge_client.call(updateSrv);
-		}
-	}
-
-	diagnostic_msgs::KeyValue RPStrategicControl::getEndPoint(std::vector<rosplan_dispatch_msgs::EsterelPlanNode> & nodes) const{
-		std::vector<rosplan_dispatch_msgs::EsterelPlanNode>::reverse_iterator nrit = nodes.rbegin();
-		for(; nrit != nodes.rend(); ++nrit){
-			if(!(nrit->action.name == "goto_waypoint" || nrit->action.name == "dock")){
-				for(std::vector<diagnostic_msgs::KeyValue>::iterator i = nrit->action.parameters.begin(); i != nrit->action.parameters.end(); ++i){
-					if(i->key == "wp"){
-						return *i;
-					}
-				}
-			}
-		}
-		return nodes[nodes.size() - 1].action.parameters[0];
-	}
-
-	//going to change when I have the updated edge durations
-	int RPStrategicControl::getMinTime(rosplan_dispatch_msgs::EsterelPlan& plan) const{
-		//create graph layout to help with the algorithm - max 10000 so that non connected edges wont be taken into account
-		std::vector<std::vector<int> > graph(plan.nodes.size(), std::vector<int>(plan.nodes.size(), 10000));
-		std::vector<std::vector<int> > newGraph(plan.nodes.size(), std::vector<int>(plan.nodes.size(), 1000));
-		//loop around all nodes
-		std::vector<rosplan_dispatch_msgs::EsterelPlanNode>::iterator nit = plan.nodes.begin();
-		for(int i = 0; i < plan.nodes.size(); ++i){
-			rosplan_dispatch_msgs::EsterelPlanNode* nit = &plan.nodes[i];
-			//the distance from a vertex to itself is 0
-			graph[i][i] = 0;
-			//for each node loop around all incoming edges
-			std::vector<int>::iterator eit = nit->edges_in.begin();
-			for(; eit != nit->edges_in.end(); ++eit){
-				//get the incoming edge from the plan
-				rosplan_dispatch_msgs::EsterelPlanEdge tempEdge = plan.edges[*eit];
-				//use the edges source to get the node that the edge starts at - assuming edges can only come from one node
-				rosplan_dispatch_msgs::EsterelPlanNode tempNode = plan.nodes[tempEdge.source_ids[0]];
-				//the distance between the node the edge starts, at and the node we are looking at: is it's duration
-				graph[tempEdge.source_ids[0]][i] = tempNode.action.duration;
-			}
-		}
-		for(int k = 0; k < graph.size(); ++k){
-			for(int i = 0; i < graph.size(); ++i){
-				for(int j = 0; j < graph.size(); ++j){
-					if(graph[i][k] + graph[k][j] < newGraph[i][j]){
-						newGraph[i][j] = graph[i][k] + graph[k][j];
-					}
-				}
-			}
 		}
 	}
 

@@ -6,9 +6,6 @@ namespace KCL_rosplan {
 	/* constructor */
 	RPTacticalControl::RPTacticalControl(ros::NodeHandle &nh) {
 
-		current_goals_client = nh.serviceClient<rosplan_knowledge_msgs::GetAttributeService>("/rosplan_knowledge_base/state/goals");
-		local_update_knowledge_client = nh.serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateService>("/rosplan_knowledge_base/update");
-
 		// planning interface
 		std::string goalTopic = "/rosplan_interface_strategic_control/get_mission_goals";
 		std::string cancTopic = "/rosplan_plan_dispatcher/cancel_dispatch";
@@ -30,6 +27,18 @@ namespace KCL_rosplan {
 		planning_client = nh.serviceClient<std_srvs::Empty>(planTopic);
 		parsing_client = nh.serviceClient<std_srvs::Empty>(parsTopic);
 		dispatch_client = nh.serviceClient<rosplan_dispatch_msgs::DispatchService>(dispTopic);
+
+        // knowledge interface
+		std::string knowTopic = "/rosplan_knowledge_base";
+		nh.getParam("knowledge_base", knowTopic);
+
+        std::stringstream ss;
+        ss << knowTopic << "/state/goals";
+		current_goals_client = nh.serviceClient<rosplan_knowledge_msgs::GetAttributeService>(ss.str());
+
+        ss.str("");
+        ss << knowTopic << "/update";
+		local_update_knowledge_client = nh.serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateService>(ss.str());
 	}
 
 	/**
@@ -44,7 +53,7 @@ namespace KCL_rosplan {
 		rosplan_knowledge_msgs::GetAttributeService gsrv;
 		gsrv.request.predicate_name = mission;
 		if(!mission_goals_client.call(gsrv)) {
-			ROS_ERROR("KCL: (%s) Failed to call Knowledge Base for goals.", ros::this_node::getName().c_str());
+			ROS_ERROR("KCL: (%s) Failed to call Strategic Interface for goals: %s.", ros::this_node::getName().c_str(), mission_goals_client.getService().c_str());
 			return false;
 		} else {
 			mission_goals = gsrv.response.attributes;
@@ -53,7 +62,7 @@ namespace KCL_rosplan {
 		// fetch and store old goals
 		rosplan_knowledge_msgs::GetAttributeService currentGoalSrv;
 		if (!current_goals_client.call(currentGoalSrv)) {
-			ROS_ERROR("KCL: (%s) Failed to call Knowledge Base for goals.", ros::this_node::getName().c_str());
+			ROS_ERROR("KCL: (%s) Failed to call Knowledge Base for goals: %s.", ros::this_node::getName().c_str(), current_goals_client.getService().c_str());
 			return false;
 		} else {
 			old_goals = currentGoalSrv.response.attributes;
