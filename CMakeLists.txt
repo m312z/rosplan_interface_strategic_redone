@@ -15,6 +15,9 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
 )
 
+## Compile as C++11, supported in ROS Kinetic and newer
+add_compile_options(-std=c++11)
+
 ###################################
 ## catkin specific configuration ##
 ###################################
