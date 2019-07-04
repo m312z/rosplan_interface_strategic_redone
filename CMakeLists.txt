@@ -42,10 +42,14 @@ include_directories(
 ## Declare cpp executables
 add_executable(rptacticalcontrol src/RPTacticalControl.cpp)
 add_executable(rpstrategiccontrol src/RPStrategicControl.cpp)
+add_executable(rpstrategiccontrolredone src/RPStrategicControlRedone.cpp)
 
 add_dependencies(rptacticalcontrol ${catkin_EXPORTED_TARGETS})
 add_dependencies(rpstrategiccontrol ${catkin_EXPORTED_TARGETS})
+add_dependencies(rpstrategiccontrolredone ${catkin_EXPORTED_TARGETS})
+
 
 ## Specify libraries against which to link a library or executable target
 target_link_libraries(rptacticalcontrol ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(rpstrategiccontrol ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(rpstrategiccontrolredone ${catkin_LIBRARIES} ${Boost_LIBRARIES})
