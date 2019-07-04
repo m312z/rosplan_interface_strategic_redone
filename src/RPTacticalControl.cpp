@@ -29,8 +29,8 @@ namespace KCL_rosplan {
 		dispatch_client = nh.serviceClient<rosplan_dispatch_msgs::DispatchService>(dispTopic);
 
         // knowledge interface
-		std::string knowTopic = "/rosplan_knowledge_base";
-		nh.getParam("knowledge_base", knowTopic);
+		std::string knowTopic = "rosplan_knowledge_base";
+		nh.getParam("tactical_knowledge_base", knowTopic);
 
         std::stringstream ss;
         ss << knowTopic << "/state/goals";
@@ -156,7 +156,8 @@ namespace KCL_rosplan {
 			ros::Duration(1).sleep(); // sleep for a second
 
 			// dispatch tactical plan
-			bool dispatch_success = dispatch_client.call(dispatch);
+            dispatch_client.call(dispatch);
+			bool dispatch_success = dispatch.response.goal_achieved;
 
 			restoreGoals();
 			return dispatch_success;
