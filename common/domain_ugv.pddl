@@ -23,6 +23,7 @@
 	(uav_at ?u - uav ?wp - sky)
 	(docked ?u - uav)
     (flying ?u - uav)
+    (not_recharging ?u - uav)
     (uav_not_on_mission ?u - uav)
 
     ;; strategic dock predicates
@@ -41,6 +42,7 @@
 
     ;; strategic functions
     (mission_duration ?m - mission)
+    (charge ?u - uav)
 )
 
 ;;-------------;;
@@ -71,6 +73,7 @@
 	:duration ( = ?duration 6)
 	:condition (and
 		(at start (uav_at ?v ?from))
+        (at start (uav_not_on_mission ?v))
         (over all (uav_not_on_mission ?v))
 		(over all (flying ?v))
         )
@@ -87,6 +90,7 @@
         (at start (dock_at ?d ?ground_wp))
         (at start (docked_at ?v ?d))
         (at start (docked ?v))
+        (at start (uav_not_on_mission ?v))
         (over all (uav_not_on_mission ?v))
         )
     :effect(and
@@ -107,6 +111,7 @@
         (at start (uav_at ?v ?sky_wp))
 		(at start (dock_at ?d ?ground_wp))
 		(at start (dock_free ?d))
+        (at start (uav_not_on_mission ?v))
         (over all (uav_not_on_mission ?v))
         )
     :effect(and
@@ -118,6 +123,22 @@
         )
     )
 
+(:durative-action recharge
+    :parameters (?v - uav ?d - dock ?ground_wp - ground ?sky_wp - sky)
+	:duration (and (>= ?duration 0) (<= ?duration 7200))
+    :condition (and
+        (at start (not_recharging ?v))
+        (over all (docked ?v))
+        (at start (uav_not_on_mission ?v))
+        (over all (uav_not_on_mission ?v))
+        (over all (<= (charge ?v) 7200))
+        )
+    :effect(and
+        (at start (not (not_recharging ?v)))
+        (at end (not_recharging ?v))
+        (increase (charge ?v) (* 1 #t))
+        )
+    )
 
 ;;-------------------;;
 ;; STRATEGIC ACTIONS ;;
@@ -128,11 +149,14 @@
     :duration ( = ?duration (mission_duration ?m))
     :condition (and
         (at start (uav_not_on_mission ?u))
+        (over all (flying ?u))
+        (at start (> (charge ?u) (* (mission_duration ?m) 6)))
 	    )
     :effect (and
         (at start (not (uav_not_on_mission ?u)))
         (at end (uav_not_on_mission ?u))
 	    (at end (mission_complete ?m))
+        (decrease (charge ?u) (* 6 #t))
 	    )
     )
 )

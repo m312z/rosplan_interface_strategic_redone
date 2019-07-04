@@ -4,8 +4,8 @@
 ;; knowledge base.                      ;;
 ;;--------------------------------------;;
 
-(define (problem task)
-(:domain turtlebot)
+(define (problem redone_strategic)
+(:domain redone_strategic)
 (:objects
     sky_wp0 sky_wp1 sky_wp2 sky_wp3 sky_wp4 sky_wp5 sky_wp6 sky_wp7 sky_wp8 sky_wp9 - sky
     ground_wp1 ground_wp2 ground_wp3 ground_wp4 ground_wp5 ground_wp6 ground_wp7 ground_wp8 - ground
@@ -28,6 +28,9 @@
     (uav_not_on_mission uav01)
     (docked_at uav01 dock1)
     (docked uav01)
+    (not_recharging uav01)
+
+    (= (charge uav01) 7200)
 
     ;; DOCK
 	(dock_at dock1 ground_wp1)

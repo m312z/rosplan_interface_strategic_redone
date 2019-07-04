@@ -161,21 +161,29 @@
         <arg name="action_feedback_topic" value="/tactical_execution/tactical_plan_dispatch/action_feedback" />
     </include>
 
+    <!-- recharge is a dummy action that has no execution; the drone should be recharging when it is docked -->
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name"      value="recharge" />
+        <arg name="knowledge_base"        value="/strategic/rosplan_knowledge_base" />
+        <arg name="action_dispatch_topic" value="/strategic/strategic_plan_dispatch/action_dispatch" />
+        <arg name="action_feedback_topic" value="/strategic/strategic_plan_dispatch/action_feedback" />
+    </include>
+
 
     <!-- REMEMBER TO REMOVE THESE WHEN CONNECTING TO THE GAZEBO SIM INSTEAD -->
 
     <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
         <arg name="pddl_action_name"      value="take_off" />
         <arg name="knowledge_base"        value="/strategic/rosplan_knowledge_base" />
-        <arg name="action_dispatch_topic" value="/tactical_execution/tactical_plan_dispatch/action_dispatch" />
-        <arg name="action_feedback_topic" value="/tactical_execution/tactical_plan_dispatch/action_feedback" />
+        <arg name="action_dispatch_topic" value="/strategic/strategic_plan_dispatch/action_dispatch" />
+        <arg name="action_feedback_topic" value="/strategic/strategic_plan_dispatch/action_feedback" />
     </include>
 
     <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
         <arg name="pddl_action_name"      value="land" />
         <arg name="knowledge_base"        value="/strategic/rosplan_knowledge_base" />
-        <arg name="action_dispatch_topic" value="/tactical_execution/tactical_plan_dispatch/action_dispatch" />
-        <arg name="action_feedback_topic" value="/tactical_execution/tactical_plan_dispatch/action_feedback" />
+        <arg name="action_dispatch_topic" value="/strategic/strategic_plan_dispatch/action_dispatch" />
+        <arg name="action_feedback_topic" value="/strategic/strategic_plan_dispatch/action_feedback" />
     </include>
 
     <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
