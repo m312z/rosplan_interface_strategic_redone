@@ -12,10 +12,10 @@
             <!-- knowledge base name -->
             <param name="knowledge_base"         value="/strategic/rosplan_knowledge_base" />
             <!-- tactical planning interfaces -->
-            <param name="problem_service_topic"  value="/strategic/strategic_problem_interface/problem_generation_server" />
-            <param name="planning_service_topic" value="/strategic/strategic_planner_interface/planning_server" />
-            <param name="parsing_service_topic"  value="/strategic/strategic_parsing_interface/parse_plan" />
-            <param name="complete_plan_topic"    value="/strategic/strategic_parsing_interface/complete_plan" />
+            <param name="problem_service_topic"  value="/tactical_execution/tactical_problem_interface/problem_generation_server" />
+            <param name="planning_service_topic" value="/tactical_execution/tactical_planner_interface/planning_server" />
+            <param name="parsing_service_topic"  value="/tactical_execution/tactical_parsing_interface/parse_plan" />
+            <param name="complete_plan_topic"    value="/tactical_execution/tactical_parsing_interface/complete_plan" />
         </node>
 
         <!-- knowledge base -->
