@@ -128,16 +128,17 @@ namespace KCL_rosplan {
 
         try {
             while(ros::ok()) {
-
+std::cout << "HERE 1" << std::endl;
                 mutex.lock();
-
+std::cout << "HERE 2" << std::endl;
 		        // fetch goals from the KB
 		        rosplan_knowledge_msgs::GetAttributeService currentGoalSrv;
 		        if (!current_goals_client.call(currentGoalSrv)) {
 			        ROS_ERROR("KCL: (%s) Failed to call Knowledge Base for goals: %s.", ros::this_node::getName().c_str(), current_goals_client.getService().c_str());
+                    mutex.unlock();
 			        return;
 		        }
-
+std::cout << "HERE 3" << std::endl;
                 if(mission_goals.size() != currentGoalSrv.response.attributes.size()) {
                     // cancel any ongoing dispatch
                 	ROS_INFO("KCL: (%s) aborting tactical plan dispatch; goals changed.", params.name.c_str());
@@ -147,15 +148,17 @@ namespace KCL_rosplan {
 
                     mission_goals = currentGoalSrv.response.attributes;
                 }
-
+std::cout << "HERE 4" << std::endl;
                 mutex.unlock();
-
+std::cout << "HERE 5" << std::endl;
                 // check for interruption and sleep
                 boost::this_thread::interruption_point();
                 loop_rate.sleep();        
             }
-        } catch(boost::thread_interrupted&) {
+        } catch(boost::thread_interrupted& ex) {
+std::cout << "HERE" << std::endl;
             ROS_INFO("KCL: (%s) Ending goal monitor.", params.name.c_str());
+            mutex.unlock();
             return;
         }
 	}
@@ -204,6 +207,7 @@ namespace KCL_rosplan {
 
 
 		    // send to planner
+    		ROS_INFO("KCL: (%s) Starting tactical planner.", ros::this_node::getName().c_str());
 		    if(planning_client.call(empty)) {
 			    ros::Duration(1).sleep(); // sleep for a second
 
@@ -212,18 +216,21 @@ namespace KCL_rosplan {
 			    ros::Duration(1).sleep(); // sleep for a second
 
 			    // dispatch tactical plan
+        		ROS_INFO("KCL: (%s) Starting tactical dispatcher.", ros::this_node::getName().c_str());
                 dispatch_client.call(dispatch);
 			    dispatch_success = dispatch.response.goal_achieved;
 		    }
         }
 
         goalMonitorThread.interrupt();
-        //goalMonitorThread.join();
+        goalMonitorThread.join();
 
+        ROS_INFO("KCL: (%s) Finishing strategic action by clearing tactical goals.", ros::this_node::getName().c_str());
         mutex.lock();
 		restoreGoals();
         mutex.unlock();
 
+        ROS_INFO("KCL: (%s) Finished.", ros::this_node::getName().c_str());
 		return dispatch_success;
 	}
 } // close namespace
