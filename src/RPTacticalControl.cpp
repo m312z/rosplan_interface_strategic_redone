@@ -119,6 +119,47 @@ namespace KCL_rosplan {
 		}
 	}
 
+	/**
+	 * monitor mission goals in case of human intervention
+	 */
+	void RPTacticalControl::monitorGoals() {
+
+        ros::Rate loop_rate(1);
+
+        try {
+            while(ros::ok()) {
+
+                mutex.lock();
+
+		        // fetch goals from the KB
+		        rosplan_knowledge_msgs::GetAttributeService currentGoalSrv;
+		        if (!current_goals_client.call(currentGoalSrv)) {
+			        ROS_ERROR("KCL: (%s) Failed to call Knowledge Base for goals: %s.", ros::this_node::getName().c_str(), current_goals_client.getService().c_str());
+			        return;
+		        }
+
+                if(mission_goals.size() != currentGoalSrv.response.attributes.size()) {
+                    // cancel any ongoing dispatch
+                	ROS_INFO("KCL: (%s) aborting tactical plan dispatch; goals changed.", params.name.c_str());
+                    std_srvs::Empty empty;
+                    cancel_client.call(empty);
+                    ros::spinOnce();
+
+                    mission_goals = currentGoalSrv.response.attributes;
+                }
+
+                mutex.unlock();
+
+                // check for interruption and sleep
+                boost::this_thread::interruption_point();
+                loop_rate.sleep();        
+            }
+        } catch(boost::thread_interrupted&) {
+            ROS_INFO("KCL: (%s) Ending goal monitor.", params.name.c_str());
+            return;
+        }
+	}
+
 	/* action dispatch callback */
 	bool RPTacticalControl::concreteCallback(const rosplan_dispatch_msgs::ActionDispatch::ConstPtr& msg) {
 
@@ -139,32 +180,51 @@ namespace KCL_rosplan {
 		if(!initGoals(mission)) return false;
 
 		// generate problem and plan
-		ROS_INFO("KCL: (%s) Sending to planning system.", ros::this_node::getName().c_str());
+		ROS_INFO("KCL: (%s) Starting tactical replanning loop.", ros::this_node::getName().c_str());
 
+        // set up monitor for new goals
+        boost::thread goalMonitorThread(boost::bind(&RPTacticalControl::monitorGoals, this));
+
+
+        bool dispatch_success = false;
 		std_srvs::Empty empty;
-		rosplan_dispatch_msgs::DispatchService dispatch;
-		cancel_client.call(empty);
-		ros::Duration(1).sleep(); // sleep for a second
-		problem_client.call(empty);
-		ros::Duration(1).sleep(); // sleep for a second
+        while(ros::ok() && !dispatch_success && !action_cancelled) {
 
-		// send to planner
-		if(planning_client.call(empty)) {
-			ros::Duration(1).sleep(); // sleep for a second
-			// parse planner output
-			parsing_client.call(empty);
-			ros::Duration(1).sleep(); // sleep for a second
+		    rosplan_dispatch_msgs::DispatchService dispatch;
 
-			// dispatch tactical plan
-            dispatch_client.call(dispatch);
-			bool dispatch_success = dispatch.response.goal_achieved;
+            // cancel any existing dispatch (TODO check why)
+            mutex.lock();
+		    cancel_client.call(empty);
+		    ros::Duration(1).sleep(); // sleep for a second
+            mutex.unlock();
 
-			restoreGoals();
-			return dispatch_success;
-		}
+            // generate the problem
+		    problem_client.call(empty);
+		    ros::Duration(1).sleep(); // sleep for a second
 
+
+		    // send to planner
+		    if(planning_client.call(empty)) {
+			    ros::Duration(1).sleep(); // sleep for a second
+
+			    // parse planner output
+			    parsing_client.call(empty);
+			    ros::Duration(1).sleep(); // sleep for a second
+
+			    // dispatch tactical plan
+                dispatch_client.call(dispatch);
+			    dispatch_success = dispatch.response.goal_achieved;
+		    }
+        }
+
+        goalMonitorThread.interrupt();
+        //goalMonitorThread.join();
+
+        mutex.lock();
 		restoreGoals();
-		return false;
+        mutex.unlock();
+
+		return dispatch_success;
 	}
 } // close namespace
 

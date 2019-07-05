@@ -44,6 +44,8 @@ namespace KCL_rosplan {
         std::vector<rosplan_knowledge_msgs::KnowledgeItem> mission_goals;
         std::vector<rosplan_knowledge_msgs::KnowledgeItem> old_goals;
 
+        boost::mutex mutex;
+
     public:
 
         /* constructor */
@@ -52,6 +54,7 @@ namespace KCL_rosplan {
         /* listen to and process action_dispatch topic */
         bool concreteCallback(const rosplan_dispatch_msgs::ActionDispatch::ConstPtr& msg);
         bool initGoals(const std::string &mission);
+    	void monitorGoals();
         void restoreGoals();
     };
 }

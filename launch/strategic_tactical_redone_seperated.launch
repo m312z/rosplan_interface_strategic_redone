@@ -92,7 +92,7 @@
             <param name="knowledge_base"           value="/strategic/rosplan_knowledge_base" />
             <param name="tactical_knowledge_base"  value="/tactical_execution/rosplan_knowledge_base" />
             <param name="mission_goals_topic"      value="/strategic/rosplan_interface_strategic_control/get_mission_goals" />
-            <param name="cancel_service_topic"     value="/tactical_execution/tactical_plan_dispatcher/cancel_dispatch" />
+            <param name="cancel_service_topic"     value="/tactical_execution/tactical_plan_dispatch/cancel_dispatch" />
             <param name="problem_service_topic"    value="/tactical_execution/tactical_problem_interface/problem_generation_server" />
             <param name="planning_service_topic"   value="/tactical_execution/tactical_planner_interface/planning_server" />
             <param name="parsing_service_topic"    value="/tactical_execution/tactical_parsing_interface/parse_plan" />
