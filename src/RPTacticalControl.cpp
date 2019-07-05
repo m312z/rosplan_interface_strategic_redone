@@ -128,9 +128,9 @@ namespace KCL_rosplan {
 
         try {
             while(ros::ok()) {
-std::cout << "HERE 1" << std::endl;
+
                 mutex.lock();
-std::cout << "HERE 2" << std::endl;
+
 		        // fetch goals from the KB
 		        rosplan_knowledge_msgs::GetAttributeService currentGoalSrv;
 		        if (!current_goals_client.call(currentGoalSrv)) {
@@ -138,7 +138,7 @@ std::cout << "HERE 2" << std::endl;
                     mutex.unlock();
 			        return;
 		        }
-std::cout << "HERE 3" << std::endl;
+
                 if(mission_goals.size() != currentGoalSrv.response.attributes.size()) {
                     // cancel any ongoing dispatch
                 	ROS_INFO("KCL: (%s) aborting tactical plan dispatch; goals changed.", params.name.c_str());
@@ -148,15 +148,14 @@ std::cout << "HERE 3" << std::endl;
 
                     mission_goals = currentGoalSrv.response.attributes;
                 }
-std::cout << "HERE 4" << std::endl;
+
                 mutex.unlock();
-std::cout << "HERE 5" << std::endl;
+
                 // check for interruption and sleep
                 boost::this_thread::interruption_point();
                 loop_rate.sleep();        
             }
         } catch(boost::thread_interrupted& ex) {
-std::cout << "HERE" << std::endl;
             ROS_INFO("KCL: (%s) Ending goal monitor.", params.name.c_str());
             mutex.unlock();
             return;
