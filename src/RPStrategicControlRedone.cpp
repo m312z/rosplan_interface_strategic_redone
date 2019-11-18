@@ -98,13 +98,13 @@ namespace KCL_rosplan {
 
 		goal.values.clear();
 		pair_mission.key = "wp";
-		pair_mission.value = "ground_wp7";
+		pair_mission.value = "ground_wp5";
         goal.values.push_back(pair_mission);
         c2.push_back(goal);
 
 		goal.values.clear();
 		pair_mission.key = "wp";
-		pair_mission.value = "ground_wp8";
+		pair_mission.value = "ground_wp6";
         goal.values.push_back(pair_mission);
         c2.push_back(goal);
 

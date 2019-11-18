@@ -152,8 +152,8 @@ namespace KCL_rosplan {
                 mutex.unlock();
 
                 // check for interruption and sleep
-                boost::this_thread::interruption_point();
                 loop_rate.sleep();        
+                boost::this_thread::interruption_point();
             }
         } catch(boost::thread_interrupted& ex) {
             ROS_INFO("KCL: (%s) Ending goal monitor.", params.name.c_str());
