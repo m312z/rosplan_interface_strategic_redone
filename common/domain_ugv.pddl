@@ -16,7 +16,9 @@
     (can_observe ?wp1 - sky ?wp2 - ground)
 
     ;; UGV predicates
-	(ugv_at ?v - ugv ?wp - ground)
+	(ugv0_at ?wp - ground)
+    (ugv1_at ?wp - ground)
+    (ugv2_at ?wp - ground)
 	(visited ?wp - ground)
 
     ;; strategic UAV predicates
@@ -50,19 +52,46 @@
 ;;-------------;;
 
 ;; Move between any two waypoints, avoiding terrain
-(:durative-action goto_waypoint
+(:durative-action goto_waypoint0
 	:parameters (?v - ugv ?from ?to - ground)
 	:duration ( = ?duration (* 3 (distance ?from ?to)))
 	:condition (and
-		(at start (ugv_at ?v ?from))
+		(at start (ugv0_at ?from))
         (at start (connected ?from ?to))
         )
 	:effect (and
-		(at start (not (ugv_at ?v ?from)))
+		(at start (not (ugv0_at ?from)))
 		(at end (visited ?to))
-		(at end (ugv_at ?v ?to)))
+		(at end (ugv0_at ?to)))
     )
 
+;; Move between any two waypoints, avoiding terrain
+(:durative-action goto_waypoint1
+    :parameters (?v - ugv ?from ?to - ground)
+    :duration ( = ?duration (* 3 (distance ?from ?to)))
+    :condition (and
+        (at start (ugv1_at ?from))
+        (at start (connected ?from ?to))
+        )
+    :effect (and
+        (at start (not (ugv1_at ?from)))
+        (at end (visited ?to))
+        (at end (ugv1_at ?to)))
+    )
+
+;; Move between any two waypoints, avoiding terrain
+(:durative-action goto_waypoint2
+    :parameters (?v - ugv ?from ?to - ground)
+    :duration ( = ?duration (* 3 (distance ?from ?to)))
+    :condition (and
+        (at start (ugv2_at ?from))
+        (at start (connected ?from ?to))
+        )
+    :effect (and
+        (at start (not (ugv2_at ?from)))
+        (at end (visited ?to))
+        (at end (ugv2_at ?to)))
+    )
 ;;-------------;;
 ;; UAV ACTIONS ;;
 ;;-------------;;

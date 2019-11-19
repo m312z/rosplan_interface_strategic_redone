@@ -1,0 +1,43 @@
+functions:
+    - $(find rosplan_interface_strategic)/scripts/sensing_functions.py
+topics:
+    ugv0_at:
+        params:
+            - '*'
+        topic: /ugv0/amcl_pose
+        msg_type: geometry_msgs/PoseWithCovarianceStamped
+
+
+    ugv1_at:
+        params:
+            - '*'
+        topic: /ugv1/amcl_pose
+        msg_type: geometry_msgs/PoseWithCovarianceStamped
+
+    ugv2_at:
+        params:
+            - '*'
+        topic: /ugv2/amcl_pose
+        msg_type: geometry_msgs/PoseWithCovarianceStamped
+
+# triggered when we add new waypoint
+# can_observe ?wp - sky ?gwp - ground
+#    (distance ?wp1 ?wp2 - waypoint)
+
+# passive sensing
+#	(uav_at ?u - uav ?wp - sky)
+#	(docked ?u - uav)
+#    (flying ?u - uav)
+#    (not_recharging ?u - uav)
+
+#     (charge ?u - uav)
+
+#services:
+#    docked:
+#        params:
+#            - kenny # List of parameters (optional if no parameters!). must be completely instantiated
+#        service: /test_service # Service
+#        srv_type: std_srvs/SetBool # Srv type
+#        time_between_calls: 10 # Time between calls in seconds
+#        request: code # (Optional if in script) Request creation code. I.e.: "req SetBoolRequest(data=True)"
+#        operation: 'res.lala < ee' # (Optional if in script) operation to get the result
