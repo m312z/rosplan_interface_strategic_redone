@@ -39,6 +39,9 @@ namespace KCL_rosplan {
         ss.str("");
         ss << knowTopic << "/update";
 		local_update_knowledge_client = nh.serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateService>(ss.str());
+
+		std::string status_topic = "status";
+		status_publisher = nh.advertise<std_msgs::String>(status_topic, 1000);
 	}
 
 	/**
@@ -152,8 +155,8 @@ namespace KCL_rosplan {
                 mutex.unlock();
 
                 // check for interruption and sleep
-                loop_rate.sleep();        
-                boost::this_thread::interruption_point();
+                loop_rate.sleep();       
+                boost::this_thread::interruption_point(); 
             }
         } catch(boost::thread_interrupted& ex) {
             ROS_INFO("KCL: (%s) Ending goal monitor.", params.name.c_str());
@@ -165,6 +168,11 @@ namespace KCL_rosplan {
 	/* action dispatch callback */
 	bool RPTacticalControl::concreteCallback(const rosplan_dispatch_msgs::ActionDispatch::ConstPtr& msg) {
 
+		std_msgs::String status_msg;
+		status_msg.data = "on_mission";
+		status_publisher.publish(status_msg);
+		ros::spinOnce();
+
 		// get mission ID from action dispatch complete_mission (?r - robot ?m - mission ?wp - waypoint)
 		std::string mission;
 		bool found_mission = false;
@@ -172,14 +180,25 @@ namespace KCL_rosplan {
 			if(0==msg->parameters[i].key.compare("m")) {
 				mission = msg->parameters[i].value;
 				found_mission = true;
+				std::cout << mission << std::endl;
 			}
 		}
 		if(!found_mission) {
 			ROS_INFO("KCL: (%s) aborting action dispatch; PDDL action missing required parameter ?m", params.name.c_str());
+
+			status_msg.data = "off_mission";
+			status_publisher.publish(status_msg);
+			ros::spinOnce();
+
 			return false;
 		}
 
-		if(!initGoals(mission)) return false;
+		if(!initGoals(mission)) {
+			status_msg.data = "off_mission";
+			status_publisher.publish(status_msg);
+			ros::spinOnce();
+			return false;
+		}
 
 		// generate problem and plan
 		ROS_INFO("KCL: (%s) Starting tactical replanning loop.", ros::this_node::getName().c_str());
@@ -230,6 +249,11 @@ namespace KCL_rosplan {
         mutex.unlock();
 
         ROS_INFO("KCL: (%s) Finished.", ros::this_node::getName().c_str());
+
+		status_msg.data = "off_mission";
+		status_publisher.publish(status_msg);
+		ros::spinOnce();
+
 		return dispatch_success;
 	}
 } // close namespace

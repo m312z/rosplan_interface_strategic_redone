@@ -79,6 +79,7 @@ namespace KCL_rosplan {
 		// mission durations
 		std::stringstream ss;
 		std::vector<double> mission_durations;
+		std::vector<std::string> mission_completed_locations;
 
         std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> clusters;
         std::vector<rosplan_knowledge_msgs::KnowledgeItem> c1;
@@ -142,15 +143,18 @@ namespace KCL_rosplan {
 
 		    ROS_INFO("KCL: (%s) Recieved plan for %s.", ros::this_node::getName().c_str(), ss.str().c_str());
 
-		    // compute plan duration
+		    // compute plan duration and final position
 		    double max_time = 0;
-            std::string finalpos = "uav_dock";
+            std::string move_action = "flyto_waypoint";
+            std::string final_position = "sky_wp0";
 		    std::vector<rosplan_dispatch_msgs::EsterelPlanNode>::iterator nit = last_plan.nodes.begin();
 		    for(; nit != last_plan.nodes.end(); nit++) {
 			    double time = nit->action.dispatch_time + nit->action.duration;
 			    if(time > max_time) max_time = time;
+			    if(nit->action.name == move_action) final_position = nit->action.parameters[2].value;
 		    }
 
+			mission_completed_locations.push_back(final_position);
 		    mission_durations.push_back(max_time);
 		    missions[ss.str()];
 		    missions[ss.str()] = (*cit);
@@ -188,10 +192,26 @@ namespace KCL_rosplan {
 			updateSrv.request.knowledge.function_value = mission_durations[i];
 			strategic_update_knowledge_client.call(updateSrv);
 
+			// mission final position
+			updateSrv.request.knowledge.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
+			updateSrv.request.knowledge.attribute_name = "mission_complete_waypoint";
+			updateSrv.request.knowledge.values.clear();
+			pair_mission.key = "m";
+			pair_mission.value = ss.str();
+			updateSrv.request.knowledge.values.push_back(pair_mission);
+			pair_mission.key = "wp";
+			pair_mission.value = mission_completed_locations[i];
+			updateSrv.request.knowledge.values.push_back(pair_mission);
+			strategic_update_knowledge_client.call(updateSrv);
+
 			// mission goal
 			updateSrv.request.update_type = rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_GOAL;
 			updateSrv.request.knowledge.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
 			updateSrv.request.knowledge.attribute_name = "mission_complete";
+			updateSrv.request.knowledge.values.clear();
+			pair_mission.key = "m";
+			pair_mission.value = ss.str();
+			updateSrv.request.knowledge.values.push_back(pair_mission);
 			strategic_update_knowledge_client.call(updateSrv);
 		}
 	}

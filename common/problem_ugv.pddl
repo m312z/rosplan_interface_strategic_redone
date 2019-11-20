@@ -20,9 +20,9 @@
     ;;---------------;;
 
     ;; UGV
-    (ugv0_at ground_wp1)
-    (ugv1_at ground_wp5)
-    (ugv2_at ground_wp6)
+    ;(ugv0_at ground_wp1)
+    ;(ugv1_at ground_wp5)
+    ;(ugv2_at ground_wp6)
 
     (visited ground_wp1)
     (visited ground_wp5)

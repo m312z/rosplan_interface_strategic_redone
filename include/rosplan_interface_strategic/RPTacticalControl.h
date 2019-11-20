@@ -46,6 +46,8 @@ namespace KCL_rosplan {
 
         boost::mutex mutex;
 
+        ros::Publisher status_publisher;
+
     public:
 
         /* constructor */

@@ -20,6 +20,7 @@
     (ugv1_at ?wp - ground)
     (ugv2_at ?wp - ground)
 	(visited ?wp - ground)
+    (not_occupied ?wp - ground)
 
     ;; strategic UAV predicates
 	(uav_at ?u - uav ?wp - sky)
@@ -35,6 +36,7 @@
 
     ;; strategic predicates
     (mission_complete ?m - mission)
+    (mission_complete_waypoint ?m - mission ?wp - sky)
 )
 
 (:functions
@@ -56,10 +58,13 @@
 	:parameters (?v - ugv ?from ?to - ground)
 	:duration ( = ?duration (* 3 (distance ?from ?to)))
 	:condition (and
+        (at start (not_occupied ?to))
 		(at start (ugv0_at ?from))
         (at start (connected ?from ?to))
         )
 	:effect (and
+        (at start (not_occupied ?from))
+        (at start (not (not_occupied ?to)))
 		(at start (not (ugv0_at ?from)))
 		(at end (visited ?to))
 		(at end (ugv0_at ?to)))
@@ -92,6 +97,7 @@
         (at end (visited ?to))
         (at end (ugv2_at ?to)))
     )
+
 ;;-------------;;
 ;; UAV ACTIONS ;;
 ;;-------------;;
@@ -174,17 +180,21 @@
 ;;-------------------;;
 
 (:durative-action complete_mission
-    :parameters (?u - uav ?m - mission)
+    :parameters (?u - uav ?m - mission ?from ?to - sky)
     :duration ( = ?duration (mission_duration ?m))
     :condition (and
         (at start (uav_not_on_mission ?u))
+        (at start (mission_complete_waypoint ?m ?to))
+        (at start (uav_at ?u ?from))
         (over all (flying ?u))
         (at start (> (charge ?u) (* (mission_duration ?m) 6)))
 	    )
     :effect (and
         (at start (not (uav_not_on_mission ?u)))
+        (at start (not (uav_at ?u ?from)))
         (at end (uav_not_on_mission ?u))
 	    (at end (mission_complete ?m))
+        (at end (uav_at ?u ?to))
         (decrease (charge ?u) (* 6 #t))
 	    )
     )

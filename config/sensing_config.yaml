@@ -1,12 +1,12 @@
 functions:
     - $(find rosplan_interface_strategic)/scripts/sensing_functions.py
 topics:
+    
     ugv0_at:
         params:
             - '*'
         topic: /ugv0/amcl_pose
         msg_type: geometry_msgs/PoseWithCovarianceStamped
-
 
     ugv1_at:
         params:
@@ -20,17 +20,53 @@ topics:
         topic: /ugv2/amcl_pose
         msg_type: geometry_msgs/PoseWithCovarianceStamped
 
+    not_occupied:
+        params:
+            - '*'
+        topic:
+            - /ugv0/amcl_pose
+            - /ugv1/amcl_pose
+            - /ugv2/amcl_pose
+        msg_type: geometry_msgs/PoseWithCovarianceStamped
+
+    not_recharging:
+        params:
+            - 'uav01'
+        topic: /mavros/battery
+        msg_type: sensor_msgs/BatteryState
+        operation: msg.power_supply_status != msg.POWER_SUPPLY_STATUS_CHARGING
+
+    uav_at:
+        params:
+            - 'uav01'
+            - '*'
+        topic: /mavros/local_position/odom
+        msg_type: nav_msgs/Odometry
+
+    uav_not_on_mission:
+        params:
+            - 'uav01'
+        topic: /tactical_execution/rosplan_interface_tactical_control/status
+        msg_type: std_msgs/String
+        operation: msg.data == "off_mission"
+
+
+# passive sensing (predicate)
+#	(uav_at ?u - uav ?wp - sky)
+#	(docked ?u - uav)
+#   (flying ?u - uav)
+
+# passive sensing (function)
+#    charge:
+#        params:
+#            - 'uav01'
+#        topic: /mavros/battery
+#        msg_type: sensor_msgs/BatteryState
+#        operation: msg.charge
+
 # triggered when we add new waypoint
 # can_observe ?wp - sky ?gwp - ground
 #    (distance ?wp1 ?wp2 - waypoint)
-
-# passive sensing
-#	(uav_at ?u - uav ?wp - sky)
-#	(docked ?u - uav)
-#    (flying ?u - uav)
-#    (not_recharging ?u - uav)
-
-#     (charge ?u - uav)
 
 #services:
 #    docked:
