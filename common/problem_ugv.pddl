@@ -9,7 +9,7 @@
 (:objects
     sky_wp0 sky_wp1 sky_wp2 sky_wp3 - sky
     ground_wp0 ground_wp1 ground_wp2 ground_wp3 ground_wp4 ground_wp5 ground_wp6 - ground
-    ugv01 ugv02 ugv03 - ugv
+    ugv1 ugv2 ugv0 - ugv
     uav01 - uav
     dock1 dock2 - dock
 )
