@@ -11,6 +11,7 @@
     sky_wp0 sky_wp1 sky_wp2 sky_wp3 - sky
     ground_wp0 ground_wp1 ground_wp2 ground_wp3 ground_wp4 ground_wp5 ground_wp6 - ground
     uav01 - uav
+    dock1 dock2 - dock
 )
 (:init
 
@@ -19,55 +20,20 @@
     ;;----------------------------;;
 
     (uav_at uav01 sky_wp0)
+    (docked_at uav01 dock1)
+    (not_recharging uav01)
+
+    ;; DOCK
+    (dock_at dock1 ground_wp1)
+    (dock_at dock2 ground_wp1)
+    (dock_free dock2)
 
     ;;--------------;;
     ;; static state ;;
     ;;--------------;;
 
-    (can_observe sky_wp0 ground_wp0)
-    (can_observe sky_wp1 ground_wp1)
-    (can_observe sky_wp1 ground_wp2)
-    (can_observe sky_wp2 ground_wp3)
-    (can_observe sky_wp2 ground_wp4)
-    (can_observe sky_wp3 ground_wp5)
-    (can_observe sky_wp3 ground_wp6)
-
-    ;;(connected ground_wp0 ground_wp1)
-    ;;(connected ground_wp1 ground_wp0)
-    (connected ground_wp1 ground_wp2)
-    (connected ground_wp1 ground_wp3)
-    (connected ground_wp2 ground_wp1)
-    (connected ground_wp2 ground_wp3)
-    (connected ground_wp3 ground_wp1)
-    (connected ground_wp3 ground_wp2)
-    (connected ground_wp3 ground_wp4)
-    (connected ground_wp3 ground_wp5)
-    (connected ground_wp3 ground_wp6)
-    (connected ground_wp4 ground_wp3)
-    (connected ground_wp4 ground_wp5)
-    (connected ground_wp4 ground_wp6)
-    (connected ground_wp5 ground_wp3)
-    (connected ground_wp5 ground_wp4)
-    (connected ground_wp5 ground_wp6)
-    (connected ground_wp6 ground_wp3)
-    (connected ground_wp6 ground_wp4)
-    (connected ground_wp6 ground_wp5)
-
-    (connected sky_wp0 ground_wp0)
-    (connected ground_wp0 sky_wp0)
-
-    (connected sky_wp0 sky_wp1)
-    (connected sky_wp0 sky_wp2)
-    (connected sky_wp0 sky_wp3)
-    (connected sky_wp1 sky_wp0)
-    (connected sky_wp1 sky_wp2)
-    (connected sky_wp1 sky_wp3)
-    (connected sky_wp2 sky_wp0)
-    (connected sky_wp2 sky_wp1)
-    (connected sky_wp2 sky_wp3)
-    (connected sky_wp3 sky_wp0)
-    (connected sky_wp3 sky_wp1)
-    (connected sky_wp3 sky_wp2)
+    (= (distance sky_wp0 ground_wp0) 5.0)
+    (= (distance ground_wp0 sky_wp0) 5.0)
 
     (= (distance ground_wp0 ground_wp1) 5.0)
     (= (distance ground_wp1 ground_wp0) 5.0)

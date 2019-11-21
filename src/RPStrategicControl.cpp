@@ -52,7 +52,6 @@ namespace KCL_rosplan {
 		if(missions.find(mission_name)!=missions.end()) {
 			res.attributes = missions.find(mission_name)->second;
 		}
-
 	}
 
 	/**

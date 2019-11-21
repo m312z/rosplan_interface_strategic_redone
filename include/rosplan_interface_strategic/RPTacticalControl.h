@@ -32,6 +32,7 @@ namespace KCL_rosplan {
     private:
 
         ros::ServiceClient current_goals_client;
+        ros::ServiceClient current_props_client;
         ros::ServiceClient mission_goals_client;
         ros::ServiceClient cancel_client;
         ros::ServiceClient problem_client;
@@ -55,7 +56,7 @@ namespace KCL_rosplan {
 
         /* listen to and process action_dispatch topic */
         bool concreteCallback(const rosplan_dispatch_msgs::ActionDispatch::ConstPtr& msg);
-        bool initGoals(const std::string &mission);
+        bool initGoals(const std::string &mission, const std::string &uav_name);
     	void monitorGoals();
         void restoreGoals();
     };

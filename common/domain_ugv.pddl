@@ -12,7 +12,6 @@
 (:predicates
 
     ;; statics (in both)
-    (connected ?wp1 ?wp2 - waypoint)
     (can_observe ?wp1 - sky ?wp2 - ground)
 
     ;; UGV predicates
@@ -60,7 +59,6 @@
 	:condition (and
         (at start (not_occupied ?to))
 		(at start (ugv0_at ?from))
-        (at start (connected ?from ?to))
         )
 	:effect (and
         (at start (not_occupied ?from))
@@ -76,7 +74,6 @@
     :duration ( = ?duration (* 3 (distance ?from ?to)))
     :condition (and
         (at start (ugv1_at ?from))
-        (at start (connected ?from ?to))
         )
     :effect (and
         (at start (not (ugv1_at ?from)))
@@ -90,7 +87,6 @@
     :duration ( = ?duration (* 3 (distance ?from ?to)))
     :condition (and
         (at start (ugv2_at ?from))
-        (at start (connected ?from ?to))
         )
     :effect (and
         (at start (not (ugv2_at ?from)))

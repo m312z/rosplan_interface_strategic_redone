@@ -36,6 +36,10 @@ namespace KCL_rosplan {
         ss << knowTopic << "/state/goals";
 		current_goals_client = nh.serviceClient<rosplan_knowledge_msgs::GetAttributeService>(ss.str());
 
+		ss.str("");
+		ss << knowTopic << "/state/propositions";
+		current_props_client = nh.serviceClient<rosplan_knowledge_msgs::GetAttributeService>(ss.str());
+
         ss.str("");
         ss << knowTopic << "/update";
 		local_update_knowledge_client = nh.serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateService>(ss.str());
@@ -47,7 +51,7 @@ namespace KCL_rosplan {
 	/**
 	 * fetch goals for corresponding mission and update KB
 	 */
-	bool RPTacticalControl::initGoals(const std::string &mission) {
+	bool RPTacticalControl::initGoals(const std::string &mission, const std::string &uav_name) {
 
 		mission_goals.clear();
 		old_goals.clear();
@@ -71,6 +75,25 @@ namespace KCL_rosplan {
 			old_goals = currentGoalSrv.response.attributes;
 		}
 
+		// fetch final goal position for mission
+		std::string mission_goal_location = "";
+		rosplan_knowledge_msgs::GetAttributeService currentPropsSrv;
+		currentPropsSrv.request.predicate_name = "mission_complete_waypoint";		
+		if (!current_props_client.call(currentPropsSrv)) {
+			ROS_ERROR("KCL: (%s) Failed to call Knowledge Base for propositions: %s.", ros::this_node::getName().c_str(), current_goals_client.getService().c_str());
+			return false;
+		} else {
+			std::vector<rosplan_knowledge_msgs::KnowledgeItem>::iterator kit = currentPropsSrv.response.attributes.begin();
+			for(; kit!=currentPropsSrv.response.attributes.end(); kit++) {
+				// (mission_complete_waypoint ?m - mission ?wp - sky)
+				if(kit->values.size()<2) continue; // malformed proposition
+				if(kit->values[0].value == mission) {
+					mission_goal_location = kit->values[1].value;
+					break;
+				}
+			}
+		}
+
 		// clear old goals
 		rosplan_knowledge_msgs::KnowledgeUpdateService updateSrv;
 		updateSrv.request.update_type = rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_GOAL;
@@ -92,6 +115,26 @@ namespace KCL_rosplan {
 			}
 		}
 
+		if(mission_goal_location != "") {
+			// add final goal position as a tactical goal
+			rosplan_knowledge_msgs::KnowledgeItem wpgoal;
+			wpgoal.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
+			wpgoal.attribute_name = "uav_at";
+			diagnostic_msgs::KeyValue pair;
+			pair.key = "u";
+			pair.value = uav_name;
+			wpgoal.values.push_back(pair);
+			pair.key = "wp";
+			pair.value = mission_goal_location;
+			wpgoal.values.push_back(pair);
+			updateGoalSrv.request.knowledge = wpgoal;
+			if(!local_update_knowledge_client.call(updateGoalSrv)) {
+				ROS_INFO("KCL: (%s) failed to update PDDL goal.", ros::this_node::getName().c_str());
+				restoreGoals();
+				return false;
+			}
+		}
+
 		return true;
 
 	}
@@ -101,15 +144,20 @@ namespace KCL_rosplan {
 	 */
 	void RPTacticalControl::restoreGoals() {
 
+		ROS_INFO("restoreGoals ##### %d" , __LINE__);
+
 		// remove mission goal from KB
 		rosplan_knowledge_msgs::KnowledgeUpdateService updateGoalSrv;
 		updateGoalSrv.request.update_type = rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_GOAL;
 		for(int i = 0; i<mission_goals.size(); i++) {
+			ROS_INFO("restoreGoals ##### %d" , __LINE__);
 			updateGoalSrv.request.knowledge = mission_goals[i];
 			if(!local_update_knowledge_client.call(updateGoalSrv)) {
 				ROS_INFO("KCL: (%s) failed to update PDDL goal.", ros::this_node::getName().c_str());
 			}
 		}
+
+		ROS_INFO("restoreGoals ##### %d" , __LINE__);
 
 		// add old goal to knowledge base
 		updateGoalSrv.request.update_type = rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_GOAL;
@@ -175,16 +223,21 @@ namespace KCL_rosplan {
 
 		// get mission ID from action dispatch complete_mission (?r - robot ?m - mission ?wp - waypoint)
 		std::string mission;
+		std::string uav_name;
 		bool found_mission = false;
+		bool found_uav_name = false;
 		for(size_t i=0; i<msg->parameters.size(); i++) {
 			if(0==msg->parameters[i].key.compare("m")) {
 				mission = msg->parameters[i].value;
 				found_mission = true;
-				std::cout << mission << std::endl;
+			}
+			if(0==msg->parameters[i].key.compare("u")) {
+				uav_name = msg->parameters[i].value;
+				found_uav_name = true;
 			}
 		}
-		if(!found_mission) {
-			ROS_INFO("KCL: (%s) aborting action dispatch; PDDL action missing required parameter ?m", params.name.c_str());
+		if(!found_mission || !found_uav_name) {
+			ROS_INFO("KCL: (%s) aborting action dispatch; PDDL action missing required parameter ?u ?m", params.name.c_str());
 
 			status_msg.data = "off_mission";
 			status_publisher.publish(status_msg);
@@ -193,7 +246,7 @@ namespace KCL_rosplan {
 			return false;
 		}
 
-		if(!initGoals(mission)) {
+		if(!initGoals(mission, uav_name)) {
 			status_msg.data = "off_mission";
 			status_publisher.publish(status_msg);
 			ros::spinOnce();

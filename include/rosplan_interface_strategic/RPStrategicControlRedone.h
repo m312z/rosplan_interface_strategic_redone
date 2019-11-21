@@ -5,6 +5,7 @@
 
 #include "rosplan_knowledge_msgs/KnowledgeItem.h"
 #include "rosplan_knowledge_msgs/KnowledgeUpdateService.h"
+#include "rosplan_knowledge_msgs/KnowledgeUpdateServiceArray.h"
 #include "rosplan_knowledge_msgs/GetAttributeService.h"
 #include "rosplan_dispatch_msgs/EsterelPlan.h"
 #include "rosplan_dispatch_msgs/ActionDispatch.h"
@@ -35,7 +36,9 @@ namespace KCL_rosplan {
 		ros::ServiceClient tactical_current_goals_client;
 		ros::ServiceClient strategic_current_goals_client;
 		std::vector<rosplan_knowledge_msgs::KnowledgeItem> goals;
-		std::map< std::string, std::vector<rosplan_knowledge_msgs::KnowledgeItem> > missions;
+		std::map< std::string, std::vector<rosplan_knowledge_msgs::KnowledgeItem>> missions;
+		std::map< std::string, double> mission_durations;
+		std::map< std::string, std::string> mission_completed_locations;
 
 		/* planning interface */
 		ros::ServiceClient problem_client;
@@ -58,6 +61,10 @@ namespace KCL_rosplan {
 		/* problem decomposition service method */
 		bool decomposeProblem(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 		bool getMissionGoals(rosplan_knowledge_msgs::GetAttributeService::Request &req, rosplan_knowledge_msgs::GetAttributeService::Response &res);
+		bool addMissionGoals(rosplan_knowledge_msgs::KnowledgeUpdateServiceArray::Request &req, rosplan_knowledge_msgs::KnowledgeUpdateServiceArray::Response &res);
+
+		void planMission(const std::vector<rosplan_knowledge_msgs::KnowledgeItem> &cluster, const std::string &mission_name);
+		void storeMission(const std::string &mission_name);
 	};
 }
 #endif

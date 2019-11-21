@@ -5,17 +5,26 @@
 (:types
 	ground sky - waypoint
 	uav - robot
+	dock
 )
 
 (:predicates
 
     ;; statics (in both)
-    (connected ?wp1 ?wp2 - waypoint)
     (can_observe ?wp1 - sky ?wp2 - ground)
+
+	(docked ?u - uav)
+    (flying ?u - uav)
+    (not_recharging ?u - uav)
 
     ;; tactical domain only
     (observed ?wp - ground)
 	(uav_at ?u - uav ?wp - sky)
+
+	;; dock predicates
+	(dock_at ?d - dock ?wp - ground)
+	(docked_at ?u - uav ?d - dock)
+	(dock_free ?d - dock)
 )
 
 (:functions
@@ -48,4 +57,40 @@
         )
     )
 
+(:durative-action take_off
+    :parameters (?v - uav ?d - dock ?ground_wp - ground ?sky_wp - sky)
+	:duration (= ?duration 6)
+    :condition (and
+        (at start (can_observe ?sky_wp ?ground_wp))
+        (at start (dock_at ?d ?ground_wp))
+        (at start (docked_at ?v ?d))
+        (at start (docked ?v))
+        )
+    :effect(and
+        (at start (not (docked_at ?v ?d)))
+        (at start (not (docked ?v)))
+        (at end (uav_at ?v ?sky_wp))
+        (at end (flying ?v))
+		(at end (dock_free ?d))
+        )
+    )
+
+(:durative-action land
+    :parameters (?v - uav ?d - dock ?ground_wp - ground ?sky_wp - sky)
+	:duration (= ?duration 10)
+    :condition (and
+        (at start (flying ?v))
+        (at start (can_observe ?sky_wp ?ground_wp))
+        (at start (uav_at ?v ?sky_wp))
+		(at start (dock_at ?d ?ground_wp))
+		(at start (dock_free ?d))
+        )
+    :effect(and
+		(at start (not (dock_free ?d)))
+        (at start (not (uav_at ?v ?sky_wp)))
+        (at start (not (flying ?v)))
+        (at end (docked_at ?v ?d))
+        (at end (docked ?v))
+        )
+    )
 )

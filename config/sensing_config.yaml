@@ -50,6 +50,29 @@ topics:
         msg_type: std_msgs/String
         operation: msg.data == "off_mission"
 
+    flying:
+        params:
+            - 'uav01'
+        topic: /mavros/local_position/odom
+        msg_type: nav_msgs/Odometry
+        operation: msg.pose.pose.position.z >= 1
+
+    docked:
+        params:
+            - 'uav01'
+        topic: /mavros/local_position/odom
+        msg_type: nav_msgs/Odometry
+        operation: msg.pose.pose.position.z < 1
+
+###
+    distance:
+        params:
+            - '*'
+            - '*'
+        topic: /uav01/add_waypoint
+        msg_type: std_msgs/Float32MultiArray
+###
+
 
 # passive sensing (predicate)
 #	(uav_at ?u - uav ?wp - sky)
